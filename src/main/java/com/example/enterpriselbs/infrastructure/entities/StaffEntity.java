@@ -1,19 +1,24 @@
 package com.example.enterpriselbs.infrastructure.entities;
 
-import com.example.enterpriselbs.infrastructure.constants.StaffConstants;
 import jakarta.persistence.*;
-import lombok.*;
+
 
 @Entity
 @Table(name = "staff")
-public class Staff {
+public class StaffEntity {
 
     @Id
     @Column(name = "staff_id")
     private String id;
 
-    @Column(name = "username", nullable = false)
+    @Column(name = "username", nullable = false, unique = true)
     private String username;
+
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "surname", nullable = false)
+    private String surname;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
@@ -30,11 +35,19 @@ public class Staff {
     @Column(name = "leave_allocation")
     private int leaveAllocation;
 
+    public StaffEntity() {}
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
+
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+
+    public String getSurname() { return surname; }
+    public void setSurname(String surname) { this.surname = surname; }
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }

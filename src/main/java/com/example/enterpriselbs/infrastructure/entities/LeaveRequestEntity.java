@@ -1,14 +1,12 @@
 package com.example.enterpriselbs.infrastructure.entities;
 
-import com.example.enterpriselbs.infrastructure.constants.LeaveRequestConstants;
 import jakarta.persistence.*;
-import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "leave_request")
-public class LeaveRequest {
+public class LeaveRequestEntity {
 
     @Id
     @Column(name = "request_id")
@@ -26,7 +24,6 @@ public class LeaveRequest {
     @Column(name = "status", nullable = false)
     private String status;
 
-    // Getters and setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

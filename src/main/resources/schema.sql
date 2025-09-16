@@ -7,7 +7,9 @@ CREATE TABLE department (
 -- Staff table
 CREATE TABLE staff (
                        staff_id VARCHAR(10) PRIMARY KEY,
-                       username VARCHAR(50) NOT NULL,
+                       username VARCHAR(50) NOT NULL UNIQUE,
+                       first_name VARCHAR(50) NOT NULL,
+                       surname VARCHAR(50) NOT NULL,
                        password_hash VARCHAR(100) NOT NULL,
                        role VARCHAR(20) NOT NULL,
                        manager_id VARCHAR(10),
