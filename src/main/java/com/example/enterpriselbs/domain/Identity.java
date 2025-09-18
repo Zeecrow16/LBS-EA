@@ -2,16 +2,11 @@ package com.example.enterpriselbs.domain;
 
 import java.util.Objects;
 
-
-
-public class Identity {
-
+public final class Identity extends ValueObject {
     private final String value;
 
     public Identity(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Identity cannot be null or blank");
-        }
+        assertArgumentNotEmpty(value, "Identity cannot be empty");
         this.value = value;
     }
 
@@ -22,18 +17,47 @@ public class Identity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Identity)) return false;
-        Identity other = (Identity) o;
-        return value.equals(other.value);
+        if (o == null || getClass() != o.getClass()) return false;
+        Identity identity = (Identity) o;
+        return value.equals(identity.value);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(value);
     }
-
-    @Override
-    public String toString() {
-        return value;
-    }
 }
+
+//public class Identity {
+//
+//    private final String value;
+//
+//    public Identity(String value) {
+//        if (value == null || value.isBlank()) {
+//            throw new IllegalArgumentException("Identity cannot be null or blank");
+//        }
+//        this.value = value;
+//    }
+//
+//    public String value() {
+//        return value;
+//    }
+//
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (!(o instanceof Identity)) return false;
+//        Identity other = (Identity) o;
+//        return value.equals(other.value);
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return Objects.hash(value);
+//    }
+//
+//    @Override
+//    public String toString() {
+//        return value;
+//    }
+//}

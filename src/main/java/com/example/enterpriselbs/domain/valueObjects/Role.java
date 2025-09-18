@@ -1,4 +1,7 @@
 package com.example.enterpriselbs.domain.valueObjects;
 
-public class Role {
+public enum Role {
+    STAFF,
+    MANAGER,
+    ADMIN
 }

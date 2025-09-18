@@ -6,9 +6,14 @@ import com.example.enterpriselbs.domain.Identity;
 import com.example.enterpriselbs.domain.aggregates.LeaveRequestAggregate;
 import com.example.enterpriselbs.domain.aggregates.factory.LeaveRequestFactoryInterface;
 import com.example.enterpriselbs.domain.valueObjects.LeavePeriod;
+import com.example.enterpriselbs.domain.valueObjects.LeaveStatus;
+import com.example.enterpriselbs.infrastructure.entities.LeaveRequestEntity;
 import com.example.enterpriselbs.infrastructure.mappers.LeaveRequestMapper;
 import com.example.enterpriselbs.infrastructure.repositories.LeaveRequestRepository;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 
 @RestController
 @RequestMapping("api/staff")
@@ -29,13 +34,10 @@ public class StaffController {
     //send leave request
     @PostMapping("/leave-request")
     public String requestLeave(@RequestBody LeaveRequestDto dto) {
-        LeavePeriod period = new LeavePeriod(dto.startDate, dto.endDate);
+        var period = new LeavePeriod(dto.startDate, dto.endDate);
+        var leaveRequest = leaveRequestFactory.create(new Identity(dto.staffId), period);
 
-        LeaveRequestAggregate leaveRequest = leaveRequestFactory.create(new Identity(dto.staffId), period);
-
-        var entity = LeaveRequestMapper.toEntity(leaveRequest);
-        leaveRequestRepo.save(entity);
-
+        leaveRequestRepo.save(LeaveRequestMapper.toEntity(leaveRequest));
         localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
 
         return leaveRequest.id().value();
@@ -44,12 +46,10 @@ public class StaffController {
     // cancel leave request
     @PostMapping("/leave-request/{id}/cancel")
     public String cancelLeave(@PathVariable String id) {
-        var optional = leaveRequestRepo.findById(id);
-        if (optional.isEmpty()) {
-            return "Leave request not found";
-        }
+        var entity = leaveRequestRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Leave request not found"));
 
-        LeaveRequestAggregate leaveRequest = LeaveRequestMapper.toAggregate(optional.get());
+        var leaveRequest = LeaveRequestMapper.toAggregate(entity);
         leaveRequest.cancel();
 
         leaveRequestRepo.save(LeaveRequestMapper.toEntity(leaveRequest));
@@ -58,10 +58,24 @@ public class StaffController {
         return "Leave request cancelled: " + id;
     }
 
-    // view leave request
+    // view leave request status
+    @GetMapping("/leave-requests/{staffId}")
+    public List<LeaveRequestDto> viewLeaveRequests(@PathVariable String staffId) {
+        List<LeaveRequestEntity> leaveEntities = leaveRequestRepo.findByStaffId(staffId);
+        return leaveEntities.stream()
+                .map(LeaveRequestMapper::toAggregate)
+                .map(agg -> {
+                    LeaveRequestDto dto = new LeaveRequestDto();
+                    dto.staffId = agg.staffId().value();
+                    dto.startDate = agg.period().startDate();
+                    dto.endDate = agg.period().endDate();
+                    dto.status = agg.status();
+                    return dto;
+                })
+                .toList();
+    }
 
-
-    // view remaining leave
+    // view number of remaining leave days
     @GetMapping("/{staffId}/leave-remaining")
     public int remainingLeave(@PathVariable String staffId) {
         var entities = leaveRequestRepo.findByStaffId(staffId);
@@ -73,6 +87,5 @@ public class StaffController {
         int totalAnnualLeave = 20;
         return totalAnnualLeave - usedDays;
     }
-
 
 }

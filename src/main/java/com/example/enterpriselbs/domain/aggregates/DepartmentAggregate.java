@@ -2,38 +2,41 @@ package com.example.enterpriselbs.domain.aggregates;
 
 import com.example.enterpriselbs.domain.BaseEntity;
 import com.example.enterpriselbs.domain.Identity;
+import com.example.enterpriselbs.domain.events.AddDepartmentEvent;
+import com.example.enterpriselbs.domain.events.LocalEvent;
+import com.example.enterpriselbs.domain.valueObjects.DepartmentName;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class DepartmentAggregate extends BaseEntity {
 
-    private String name;
+    private DepartmentName name;
+    private final List<LocalEvent> domainEvents = new ArrayList<>();
 
-    public DepartmentAggregate(Identity id, String name) {
+    public DepartmentAggregate(Identity id, DepartmentName name) {
         super(id);
-        if (name == null || name.isBlank()) throw new IllegalArgumentException("Department name is required");
-        this.name = name;
+        this.name = Objects.requireNonNull(name, "Department name is required");
     }
 
-    public String name() {
-        return name;
+    public DepartmentName name() { return name; }
+
+    public void changeName(DepartmentName newName) {
+        this.name = Objects.requireNonNull(newName, "Department name cannot be empty");
     }
 
-    public void changeName(String newName) {
-        if (newName == null || newName.isBlank()) throw new IllegalArgumentException("Department name cannot be empty");
-        this.name = newName;
+    public List<LocalEvent> listOfDomainEvents() {
+        return new ArrayList<>(domainEvents);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof DepartmentAggregate)) return false;
-        DepartmentAggregate other = (DepartmentAggregate) o;
-        return id.equals(other.id);
+    protected void addDomainEvent(LocalEvent event) {
+        domainEvents.add(event);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    public static DepartmentAggregate createWithEvent(DepartmentName name) {
+        DepartmentAggregate dept = new DepartmentAggregate(new Identity(java.util.UUID.randomUUID().toString()), name);
+        dept.addDomainEvent(new AddDepartmentEvent(dept));
+        return dept;
     }
 }

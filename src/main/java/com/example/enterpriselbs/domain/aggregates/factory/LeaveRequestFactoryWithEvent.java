@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component;
 public class LeaveRequestFactoryWithEvent implements LeaveRequestFactoryInterface {
     @Override
     public LeaveRequestAggregate create(Identity staffId, LeavePeriod period) {
-        LeaveRequestAggregate leaveRequest = new LeaveRequestAggregate(staffId, period);
-        leaveRequest.addDomainEvent(new LeaveRequestedEvent(leaveRequest));
-        return leaveRequest;
+        return new LeaveRequestAggregate(staffId, period);
     }
 }
