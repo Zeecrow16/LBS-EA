@@ -8,30 +8,30 @@ import com.example.enterpriselbs.domain.valueObjects.Password;
 import com.example.enterpriselbs.domain.valueObjects.Role;
 import org.springframework.stereotype.Component;
 
-@Component
-public class StaffFactory {
-
-    public StaffAggregate createNewStaff(
-            String username,
-            FullName fullName,
-            Role role,
-            Identity managerId,
-            Identity departmentId,
-            int leaveAllocation,
-            Password password
-    ) {
-        StaffAggregate staff = new StaffAggregate(
-                new Identity(java.util.UUID.randomUUID().toString()),
-                username,
-                fullName,
-                role,
-                managerId,
-                departmentId,
-                leaveAllocation,
-                password
-        );
-
-        staff.addDomainEvent(new StaffAddedEvent(staff));
-        return staff;
-    }
-}
+//@Component
+//public class StaffFactory {
+//
+//    public StaffAggregate createNewStaff(
+//            String username,
+//            FullName fullName,
+//            Role role,
+//            Identity managerId,
+//            Identity departmentId,
+//            int leaveAllocation,
+//            Password password
+//    ) {
+//        StaffAggregate staff = new StaffAggregate(
+//                new Identity(java.util.UUID.randomUUID().toString()),
+//                username,
+//                fullName,
+//                role,
+//                managerId,
+//                departmentId,
+//                leaveAllocation,
+//                password
+//        );
+//
+//        staff.addDomainEvent(new StaffAddedEvent(staff));
+//        return staff;
+//    }
+//}

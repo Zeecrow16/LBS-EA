@@ -8,10 +8,12 @@ import com.example.enterpriselbs.domain.valueObjects.Password;
 import com.example.enterpriselbs.domain.valueObjects.Role;
 import com.example.enterpriselbs.infrastructure.entities.StaffEntity;
 
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class StaffMapper {
-    public static StaffAggregate toAggregate(StaffEntity entity) {
-        return new StaffAggregate(
+    public static StaffAggregate toDomain(StaffEntity entity) {
+        return StaffAggregate.createWithEvent(
                 new Identity(entity.getId()),
                 entity.getUsername(),
                 new FullName(entity.getFirstName(), entity.getSurname()),
@@ -22,7 +24,8 @@ public class StaffMapper {
                 new Password(entity.getPasswordHash())
         );
     }
-    public static StaffEntity toEntity(StaffAggregate aggregate) {
+
+    public static StaffEntity toJpa(StaffAggregate aggregate) {
         StaffEntity entity = new StaffEntity();
         entity.setId(aggregate.id().value());
         entity.setUsername(aggregate.username());
@@ -34,5 +37,24 @@ public class StaffMapper {
         entity.setLeaveAllocation(aggregate.leaveAllocation());
         entity.setPasswordHash(aggregate.password().value());
         return entity;
+    }
+
+    public static StaffDto toDTO(StaffEntity entity) {
+        StaffDto dto = new StaffDto();
+        dto.setId(entity.getId());
+        dto.setUsername(entity.getUsername());
+        dto.setFirstName(entity.getFirstName());
+        dto.setSurname(entity.getSurname());
+        dto.setRole(Role.valueOf(entity.getRole().toUpperCase()));
+        dto.setManagerId(entity.getManagerId());
+        dto.setDepartmentId(entity.getDepartmentId());
+        dto.setLeaveAllocation(entity.getLeaveAllocation());
+        return dto;
+    }
+
+    public static List<StaffDto> toDTOList(List<StaffEntity> entities) {
+        return entities.stream()
+                .map(StaffMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

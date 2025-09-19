@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface StaffRepository extends CrudRepository<StaffEntity, String> {
     List<StaffEntity> findByManagerId(String managerId);
-    List<StaffEntity> findByDepartmentId(String departmentId);
     List<StaffEntity> findByRole(String role);
+    List<StaffEntity> findByDepartmentId(String departmentId);
+
 }

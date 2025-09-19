@@ -2,8 +2,15 @@ package com.example.enterpriselbs.application.dto;
 
 
 import com.example.enterpriselbs.domain.valueObjects.Role;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
+@Getter
+@Setter
+@ToString
 public class StaffDto {
+    public String id;
     public String username;
     public String firstName;
     public String surname;

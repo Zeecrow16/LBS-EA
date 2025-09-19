@@ -10,4 +10,6 @@ import java.util.List;
 public interface LeaveRequestRepository extends CrudRepository<LeaveRequestEntity, String> {
     List<LeaveRequestEntity> findByStaffId(String staffId);
     List<LeaveRequestEntity> findByStatus(String status);
+    List<LeaveRequestEntity> findByStaffIdAndStatus(String staffId, String status);
+
 }

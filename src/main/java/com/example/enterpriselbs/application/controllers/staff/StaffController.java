@@ -1,91 +1,62 @@
 package com.example.enterpriselbs.application.controllers.staff;
 
+import com.example.enterpriselbs.application.QueryHandlers.StaffQueryHandler;
+import com.example.enterpriselbs.application.commands.CancelLeaveCommand;
+import com.example.enterpriselbs.application.commands.RequestLeaveCommand;
 import com.example.enterpriselbs.application.dto.LeaveRequestDto;
-import com.example.enterpriselbs.application.services.LocalDomainEventManager;
-import com.example.enterpriselbs.domain.Identity;
-import com.example.enterpriselbs.domain.aggregates.LeaveRequestAggregate;
-import com.example.enterpriselbs.domain.aggregates.factory.LeaveRequestFactoryInterface;
-import com.example.enterpriselbs.domain.valueObjects.LeavePeriod;
-import com.example.enterpriselbs.domain.valueObjects.LeaveStatus;
-import com.example.enterpriselbs.infrastructure.entities.LeaveRequestEntity;
-import com.example.enterpriselbs.infrastructure.mappers.LeaveRequestMapper;
-import com.example.enterpriselbs.infrastructure.repositories.LeaveRequestRepository;
+import com.example.enterpriselbs.application.services.applicationService.StaffApplicationService;
+import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("api/staff")
+@AllArgsConstructor
 public class StaffController {
 
-    private final LeaveRequestRepository leaveRequestRepo;
-    private final LocalDomainEventManager localDomainEventManager;
-    private final LeaveRequestFactoryInterface leaveRequestFactory;
+    private final StaffApplicationService staffService;
+    private final StaffQueryHandler staffQueryHandler;
 
-    public StaffController(LeaveRequestRepository leaveRequestRepo,
-                                  LocalDomainEventManager localDomainEventManager,
-                                  LeaveRequestFactoryInterface leaveRequestFactory) {
-        this.leaveRequestRepo = leaveRequestRepo;
-        this.localDomainEventManager = localDomainEventManager;
-        this.leaveRequestFactory = leaveRequestFactory;
+    //COMMANDS
+
+    //Request leave
+    @PostMapping("/requestLeave")
+    @ResponseStatus(HttpStatus.CREATED)
+    public String requestLeave(@RequestBody RequestLeaveCommand command) {
+        return staffService.requestLeave(command.getStaffId(), command.getStartDate(), command.getEndDate());
+    }
+    //Cancel leave request
+    @PostMapping("/cancelLeave")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void cancelLeaveRequest(@RequestBody CancelLeaveCommand command) {
+        staffService.cancelLeaveRequest(command.getLeaveRequestId());
     }
 
-    //send leave request
-    @PostMapping("/leave-request")
-    public String requestLeave(@RequestBody LeaveRequestDto dto) {
-        var period = new LeavePeriod(dto.startDate, dto.endDate);
-        var leaveRequest = leaveRequestFactory.create(new Identity(dto.staffId), period);
 
-        leaveRequestRepo.save(LeaveRequestMapper.toEntity(leaveRequest));
-        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
+    //QUERIES
 
-        return leaveRequest.id().value();
+    //View status of leave request
+    @GetMapping("/{staffId}/leaveStatus")
+    public List<LeaveRequestDto> viewLeaveStatus(@PathVariable String staffId) {
+        List<LeaveRequestDto> requests = staffQueryHandler.findLeaveRequests(staffId);
+        if (requests.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No leave requests found");
+        }
+        return requests;
     }
 
-    // cancel leave request
-    @PostMapping("/leave-request/{id}/cancel")
-    public String cancelLeave(@PathVariable String id) {
-        var entity = leaveRequestRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Leave request not found"));
-
-        var leaveRequest = LeaveRequestMapper.toAggregate(entity);
-        leaveRequest.cancel();
-
-        leaveRequestRepo.save(LeaveRequestMapper.toEntity(leaveRequest));
-        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
-
-        return "Leave request cancelled: " + id;
+    //View remaining annual leave
+    @GetMapping("/{staffId}/remainingLeave")
+    public int getRemainingLeave(@PathVariable String staffId) {
+        try {
+            return staffQueryHandler.findRemainingLeave(staffId);
+        } catch (IllegalArgumentException iae) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Staff id not found");
+        }
     }
 
-    // view leave request status
-    @GetMapping("/leave-requests/{staffId}")
-    public List<LeaveRequestDto> viewLeaveRequests(@PathVariable String staffId) {
-        List<LeaveRequestEntity> leaveEntities = leaveRequestRepo.findByStaffId(staffId);
-        return leaveEntities.stream()
-                .map(LeaveRequestMapper::toAggregate)
-                .map(agg -> {
-                    LeaveRequestDto dto = new LeaveRequestDto();
-                    dto.staffId = agg.staffId().value();
-                    dto.startDate = agg.period().startDate();
-                    dto.endDate = agg.period().endDate();
-                    dto.status = agg.status();
-                    return dto;
-                })
-                .toList();
-    }
-
-    // view number of remaining leave days
-    @GetMapping("/{staffId}/leave-remaining")
-    public int remainingLeave(@PathVariable String staffId) {
-        var entities = leaveRequestRepo.findByStaffId(staffId);
-        int usedDays = entities.stream()
-                .map(LeaveRequestMapper::toAggregate)
-                .mapToInt(agg -> agg.period().days())
-                .sum();
-
-        int totalAnnualLeave = 20;
-        return totalAnnualLeave - usedDays;
-    }
 
 }

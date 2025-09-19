@@ -10,53 +10,84 @@ import com.example.enterpriselbs.domain.valueObjects.LeavePeriod;
 import com.example.enterpriselbs.domain.valueObjects.LeaveStatus;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class LeaveRequestAggregate extends BaseEntity {
     private final Identity id;
-    private final Identity staffId;
-    private final LeavePeriod period;
+    private Identity staffId;
+    private LeavePeriod period;
     private LeaveStatus status;
+    private String descriptionOfStatus;
     private final List<LocalEvent> domainEvents = new ArrayList<>();
 
-    public LeaveRequestAggregate(Identity staffId, LeavePeriod period) {
-        super(new Identity(java.util.UUID.randomUUID().toString()));
-        this.id = new Identity(java.util.UUID.randomUUID().toString());
-        this.staffId = staffId;
-        this.period = period;
+    private LeaveRequestAggregate(Identity id, Identity staffId, LeavePeriod period) {
+        super(id);
+        setStaffId(staffId);
+        setPeriod(period);
+        this.id = id;
         this.status = LeaveStatus.PENDING;
+        this.descriptionOfStatus = "Pending approval";
     }
 
-    public LeaveRequestAggregate(Identity id, Identity staffId, LeavePeriod period, LeaveStatus status) {
-        super(id);
-        this.id = id;
+    public static LeaveRequestAggregate leaveRequestOfWithEvent(Identity id, Identity staffId, LeavePeriod period) {
+        LeaveRequestAggregate request = new LeaveRequestAggregate(id, staffId, period);
+        request.addDomainEvent(new LeaveApprovedEvent(request));
+        return request;
+    }
+    public static LeaveRequestAggregate leaveRequestOf(Identity id, Identity staffId, LeavePeriod period,
+                                                       LeaveStatus status, String descriptionOfStatus) {
+        LeaveRequestAggregate request = new LeaveRequestAggregate(id, staffId, period);
+        request.status = status;
+        request.descriptionOfStatus = descriptionOfStatus;
+        return request;
+    }
+
+    private void setStaffId(Identity staffId) {
+        assertArgumentNotNull(staffId, "StaffId cannot be null");
         this.staffId = staffId;
+    }
+
+    private void setPeriod(LeavePeriod period) {
+        assertArgumentNotNull(period, "Leave period cannot be null");
         this.period = period;
-        this.status = status;
     }
 
     public Identity id() { return id; }
     public Identity staffId() { return staffId; }
     public LeavePeriod period() { return period; }
     public LeaveStatus status() { return status; }
-    public List<LocalEvent> listOfDomainEvents() { return new ArrayList<>(domainEvents); }
-    public void addDomainEvent(LocalEvent event) { domainEvents.add(event); }
+    public String descriptionOfStatus() { return descriptionOfStatus; }
+
+    public List<LocalEvent> listOfDomainEvents() {
+        return Collections.unmodifiableList(domainEvents);
+    }
+
+    private void addDomainEvent(LocalEvent event) {
+        domainEvents.add(event);
+    }
 
     public void approve() {
-        if(status != LeaveStatus.PENDING) throw new IllegalStateException("Only pending leave can be approved");
+        if (status != LeaveStatus.PENDING)
+            throw new IllegalStateException("Only pending leave can be approved");
         status = LeaveStatus.APPROVED;
+        descriptionOfStatus = "Approved";
         addDomainEvent(new LeaveApprovedEvent(this));
     }
 
     public void reject() {
-        if(status != LeaveStatus.PENDING) throw new IllegalStateException("Only pending leave can be rejected");
+        if (status != LeaveStatus.PENDING)
+            throw new IllegalStateException("Only pending leave can be rejected");
         status = LeaveStatus.REJECTED;
+        descriptionOfStatus = "Rejected";
         addDomainEvent(new LeaveRejectedEvent(this));
     }
 
     public void cancel() {
-        if(status == LeaveStatus.CANCELLED) throw new IllegalStateException("Already cancelled");
+        if (status == LeaveStatus.CANCELLED)
+            throw new IllegalStateException("Already cancelled");
         status = LeaveStatus.CANCELLED;
+        descriptionOfStatus = "Cancelled";
         addDomainEvent(new LeaveCancelledEvent(this));
     }
 }
