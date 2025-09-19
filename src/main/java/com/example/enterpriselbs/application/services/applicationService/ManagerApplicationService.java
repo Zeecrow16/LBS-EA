@@ -1,5 +1,6 @@
 package com.example.enterpriselbs.application.services.applicationService;
 
+import com.example.enterpriselbs.application.dto.LeaveRequestDto;
 import com.example.enterpriselbs.application.services.LocalDomainEventManager;
 import com.example.enterpriselbs.domain.aggregates.LeaveRequestAggregate;
 import com.example.enterpriselbs.domain.aggregates.StaffAggregate;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 @Service
 @AllArgsConstructor
 public class ManagerApplicationService {
@@ -23,46 +26,39 @@ public class ManagerApplicationService {
     private final LocalDomainEventManager localDomainEventManager;
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
-//    public List<LeaveRequestAggregate> viewOutstandingRequests(String staffId) {
-//        return leaveRequestRepository.findByStaffId(staffId).stream()
-//                .filter(l -> l.getStatus().equalsIgnoreCase("PENDING"))
-//                .map(LeaveRequestMapper::toDomain)
-//                .toList();
-//    }
-//    @Transactional
-//    public void approveLeave(String leaveRequestId) {
-//        LeaveRequestAggregate leaveRequest = findLeaveRequestAggregate(leaveRequestId);
-//        leaveRequest.approve();
-//        leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
-//        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
-//    }
-//
-//    @Transactional
-//    public void rejectLeave(String leaveRequestId) {
-//        LeaveRequestAggregate leaveRequest = findLeaveRequestAggregate(leaveRequestId);
-//        leaveRequest.reject();
-//        leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
-//        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
-//    }
-//
-//    public int remainingLeaveForStaff(String staffId) {
-//        StaffAggregate staff = findStaffAggregate(staffId);
-//        int approvedDays = leaveRequestRepository.findByStaffId(staffId).stream()
-//                .filter(l -> l.getStatus().equalsIgnoreCase("APPROVED"))
-//                .mapToInt(l -> l.getEndDate().getDayOfYear() - l.getStartDate().getDayOfYear() + 1)
-//                .sum();
-//        return staff.leaveAllocation() - approvedDays;
-//    }
-//
-//    private StaffAggregate findStaffAggregate(String staffId) {
-//        Optional<StaffAggregate> staff = staffRepository.findById(staffId)
-//                .map(StaffMapper::toDomain);
-//        return staff.orElseThrow(() -> new IllegalArgumentException("Staff id not found"));
-//    }
-//
-//    private LeaveRequestAggregate findLeaveRequestAggregate(String leaveRequestId) {
-//        Optional<LeaveRequestAggregate> leaveRequest = leaveRequestRepository.findById(leaveRequestId)
-//                .map(l -> LeaveRequestMapper.toDomain((com.example.enterpriselbs.infrastructure.entities.LeaveRequestEntity) l));
-//        return leaveRequest.orElseThrow(() -> new IllegalArgumentException("Leave request id not found"));
-//    }
+    @Transactional
+    public void approveLeave(String leaveRequestId) {
+        LOG.info("Manager attempting to approve leave requestId={}", leaveRequestId);
+
+        LeaveRequestAggregate leaveRequest = leaveRequestRepository.findById(leaveRequestId)
+                .map(LeaveRequestMapper::toDomain)
+                .orElseThrow(() -> {
+                    LOG.error("Leave request not found for ID: {}", leaveRequestId);
+                    return new IllegalArgumentException("Leave request not found");
+                });
+
+        leaveRequest.approve();
+        leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
+
+        LOG.info("Leave request approved for requestId={}", leaveRequest.id().value());
+        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
+    }
+
+    @Transactional
+    public void rejectLeave(String leaveRequestId) {
+        LOG.info("Manager attempting to reject leave requestId={}", leaveRequestId);
+
+        LeaveRequestAggregate leaveRequest = leaveRequestRepository.findById(leaveRequestId)
+                .map(LeaveRequestMapper::toDomain)
+                .orElseThrow(() -> {
+                    LOG.error("Leave request not found for ID: {}", leaveRequestId);
+                    return new IllegalArgumentException("Leave request not found");
+                });
+
+        leaveRequest.reject();
+        leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
+
+        LOG.info("Leave request rejected for requestId={}", leaveRequest.id().value());
+        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
+    }
 }

@@ -28,21 +28,26 @@ public class StaffApplicationService {
     private final LeaveRequestRepository leaveRequestRepository;
     private final LocalDomainEventManager localDomainEventManager;
     private final Logger LOG = LoggerFactory.getLogger(getClass());
-
     @Transactional
     public String requestLeave(String staffId, LocalDate startDate, LocalDate endDate) {
+        LOG.info("Staff {} requesting leave from {} to {}", staffId, startDate, endDate);
+
         StaffAggregate staff = staffRepository.findById(staffId)
                 .map(StaffMapper::toDomain)
-                .orElseThrow(() -> new IllegalArgumentException("Staff id not found"));
+                .orElseThrow(() -> {
+                    LOG.error("Staff id not found: {}", staffId);
+                    return new IllegalArgumentException("Staff id not found");
+                });
 
-        LeaveRequestAggregate leaveRequest = new LeaveRequestAggregate(
+        LeaveRequestAggregate leaveRequest = LeaveRequestAggregate.leaveRequestOfWithEvent(
                 UniqueIdFactory.createID(),
                 staff.id(),
-                new LeavePeriod(startDate, endDate),
-                LeaveStatus.PENDING
+                new LeavePeriod(startDate, endDate)
         );
 
         leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
+
+        LOG.info("Leave request created with id={} for staff={}", leaveRequest.id().value(), staffId);
         localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
 
         return leaveRequest.id().value();
@@ -50,19 +55,20 @@ public class StaffApplicationService {
 
     @Transactional
     public void cancelLeaveRequest(String leaveRequestId) {
+        LOG.info("Staff attempting to cancel leave requestId={}", leaveRequestId);
+
         LeaveRequestAggregate leaveRequest = leaveRequestRepository.findById(leaveRequestId)
                 .map(LeaveRequestMapper::toDomain)
-                .orElseThrow(() -> new IllegalArgumentException("Leave request id not found"));
+                .orElseThrow(() -> {
+                    LOG.error("Leave request not found for ID: {}", leaveRequestId);
+                    return new IllegalArgumentException("Leave request id not found");
+                });
 
         leaveRequest.cancel();
         leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
-        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
-    }
 
-    private StaffAggregate findStaffAggregate(String staffId) {
-        Optional<StaffAggregate> staff = staffRepository.findById(staffId)
-                .map(StaffMapper::toDomain);
-        return staff.orElseThrow(() -> new IllegalArgumentException("Staff id not found"));
+        LOG.info("Leave request cancelled successfully: {}", leaveRequestId);
+        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
     }
 
 }

@@ -23,23 +23,24 @@ public class AdminQueryHandler {
     private final StaffRepository staffRepository;
     private final LeaveRequestRepository leaveRequestRepository;
 
-//    public List<LeaveRequestDto> findLeaveRequests(String staffId) {
-//        return leaveRequestRepository.findByStaffId(staffId).stream()
-//                .map(LeaveRequestMapper::toDTO)
-//                .collect(Collectors.toList());
-//    }
-//
-//    public int findRemainingLeave(String staffId) {
-//        return staffRepository.findById(staffId)
-//                .map(StaffMapper::toDomain)
-//                .map(staff -> {
-//                    int approvedDays = leaveRequestRepository.findByStaffId(staffId).stream()
-//                            .filter(l -> l.getStatus().equalsIgnoreCase("APPROVED"))
-//                            .mapToInt(l -> l.getEndDate().getDayOfYear() - l.getStartDate().getDayOfYear() + 1)
-//                            .sum();
-//                    return staff.leaveAllocation() - approvedDays;
-//                })
-//                .orElseThrow(() -> new IllegalArgumentException("Staff id not found"));
-//    }
+    public List<LeaveRequestDto> findOutstandingLeaveRequests(String staffId, String managerId) {
+        return leaveRequestRepository.findByStatus("PENDING").stream()
+                .filter(entity -> {
+                    if (staffId != null) {
+                        return entity.getStaffId().equals(staffId);
+                    }
+                    if (managerId != null) {
+                        // staffRepository must expose staff with managerId
+                        return staffRepository.findById(entity.getStaffId())
+                                .map(staff -> managerId.equals(staff.getManagerId()))
+                                .orElse(false);
+                    }
+                    return true; // company-wide
+                })
+                .map(LeaveRequestMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+
 
 }

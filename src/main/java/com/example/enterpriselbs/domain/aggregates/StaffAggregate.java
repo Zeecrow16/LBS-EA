@@ -2,10 +2,7 @@ package com.example.enterpriselbs.domain.aggregates;
 
 import com.example.enterpriselbs.domain.BaseEntity;
 import com.example.enterpriselbs.domain.Identity;
-import com.example.enterpriselbs.domain.events.LocalEvent;
-import com.example.enterpriselbs.domain.events.UpdateDepartmentEvent;
-import com.example.enterpriselbs.domain.events.UpdateLeaveAllocation;
-import com.example.enterpriselbs.domain.events.UpdateStaffRoleEvent;
+import com.example.enterpriselbs.domain.events.*;
 import com.example.enterpriselbs.domain.valueObjects.FullName;
 import com.example.enterpriselbs.domain.valueObjects.Password;
 import com.example.enterpriselbs.domain.valueObjects.Role;
@@ -67,9 +64,8 @@ public class StaffAggregate extends BaseEntity {
     }
 
     public void changeDepartment(Identity newDepartmentId) {
-        String oldDept = this.departmentId != null ? this.departmentId.value() : null;
         this.departmentId = newDepartmentId;
-        addDomainEvent(new UpdateDepartmentEvent(this.id.value(), oldDept, newDepartmentId.value()));
+        addDomainEvent(new UpdateDepartmentEvent(this));
     }
 
     private void setLeaveAllocation(int allocation) {
@@ -90,18 +86,9 @@ public class StaffAggregate extends BaseEntity {
                                                  int leaveAllocation,
                                                  Password password) {
         StaffAggregate staff = new StaffAggregate(id, username, fullName, role, managerId, departmentId, leaveAllocation, password);
-        // example: could add a StaffCreatedEvent here
-        // staff.addDomainEvent(new StaffCreatedEvent(staff));
+        staff.addDomainEvent(new StaffAddedEvent(staff));
         return staff;
     }
 
 }
-
-//    public void setManager(Identity newManagerId) {
-//        this.managerId = newManagerId;
-//    }
-//
-//    private void setUsername(String username) {
-//        if (username == null || username.isBlank()) throw new IllegalArgumentException("Username cannot be empty");
-//    }
 

@@ -1,11 +1,15 @@
 package com.example.enterpriselbs.infrastructure.entities;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "event_store")
+@Getter
+@ToString
 public class EventStoreEntity {
 
     @Id

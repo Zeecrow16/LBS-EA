@@ -2,10 +2,7 @@ package com.example.enterpriselbs.domain.aggregates;
 
 import com.example.enterpriselbs.domain.BaseEntity;
 import com.example.enterpriselbs.domain.Identity;
-import com.example.enterpriselbs.domain.events.LeaveApprovedEvent;
-import com.example.enterpriselbs.domain.events.LeaveCancelledEvent;
-import com.example.enterpriselbs.domain.events.LeaveRejectedEvent;
-import com.example.enterpriselbs.domain.events.LocalEvent;
+import com.example.enterpriselbs.domain.events.*;
 import com.example.enterpriselbs.domain.valueObjects.LeavePeriod;
 import com.example.enterpriselbs.domain.valueObjects.LeaveStatus;
 
@@ -32,7 +29,7 @@ public class LeaveRequestAggregate extends BaseEntity {
 
     public static LeaveRequestAggregate leaveRequestOfWithEvent(Identity id, Identity staffId, LeavePeriod period) {
         LeaveRequestAggregate request = new LeaveRequestAggregate(id, staffId, period);
-        request.addDomainEvent(new LeaveApprovedEvent(request));
+        request.addDomainEvent(new LeaveRequestedEvent(request));
         return request;
     }
     public static LeaveRequestAggregate leaveRequestOf(Identity id, Identity staffId, LeavePeriod period,

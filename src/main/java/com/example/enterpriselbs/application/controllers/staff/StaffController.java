@@ -23,23 +23,22 @@ public class StaffController {
     //COMMANDS
 
     //Request leave
-    @PostMapping("/requestLeave")
+    @PostMapping("/request-leave")
     @ResponseStatus(HttpStatus.CREATED)
     public String requestLeave(@RequestBody RequestLeaveCommand command) {
         return staffService.requestLeave(command.getStaffId(), command.getStartDate(), command.getEndDate());
     }
     //Cancel leave request
-    @PostMapping("/cancelLeave")
+    @DeleteMapping("/cancel-leave")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void cancelLeaveRequest(@RequestBody CancelLeaveCommand command) {
         staffService.cancelLeaveRequest(command.getLeaveRequestId());
     }
 
-
     //QUERIES
 
     //View status of leave request
-    @GetMapping("/{staffId}/leaveStatus")
+    @GetMapping("/{staffId}/leave-status")
     public List<LeaveRequestDto> viewLeaveStatus(@PathVariable String staffId) {
         List<LeaveRequestDto> requests = staffQueryHandler.findLeaveRequests(staffId);
         if (requests.isEmpty()) {
@@ -49,7 +48,7 @@ public class StaffController {
     }
 
     //View remaining annual leave
-    @GetMapping("/{staffId}/remainingLeave")
+    @GetMapping("/{staffId}/remaining-leave")
     public int getRemainingLeave(@PathVariable String staffId) {
         try {
             return staffQueryHandler.findRemainingLeave(staffId);

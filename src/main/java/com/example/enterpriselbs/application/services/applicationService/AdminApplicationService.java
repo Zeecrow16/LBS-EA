@@ -1,10 +1,12 @@
 package com.example.enterpriselbs.application.services.applicationService;
 
+import com.example.enterpriselbs.application.commands.*;
 import com.example.enterpriselbs.application.dto.StaffDto;
 import com.example.enterpriselbs.application.services.LocalDomainEventManager;
 import com.example.enterpriselbs.domain.Identity;
 import com.example.enterpriselbs.domain.aggregates.LeaveRequestAggregate;
 import com.example.enterpriselbs.domain.aggregates.StaffAggregate;
+import com.example.enterpriselbs.domain.aggregates.factory.UniqueIdFactory;
 import com.example.enterpriselbs.domain.events.StaffAddedEvent;
 import com.example.enterpriselbs.domain.valueObjects.FullName;
 import com.example.enterpriselbs.domain.valueObjects.Role;
@@ -31,76 +33,82 @@ public class AdminApplicationService {
     private final LeaveRequestRepository leaveRequestRepository;
     private final LocalDomainEventManager localDomainEventManager;
     private final Logger LOG = LoggerFactory.getLogger(getClass());
-//
-//    @Transactional
-//    public String addNewStaff(StaffDto dto) {
-//        Identity staffId = new Identity(dto.getId());
-//        LOG.info("Adding new staff with id {}", staffId);
-//
-//        StaffAggregate staff = new StaffAggregate(
-//                staffId,
-//                dto.getUsername(),
-//                new FullName(dto.getFirstName(), dto.getSurname()),
-//                dto.getRole(),
-//                dto.getManagerId() != null ? new Identity(dto.getManagerId()) : null,
-//                dto.getDepartmentId() != null ? new Identity(dto.getDepartmentId()) : null,
-//                dto.getLeaveAllocation(),
-//                new Password(dto.getPasswordHash())
-//        );
-//
-//        StaffEntity entity = StaffMapper.toJpa(staff);
-//        staffRepository.save(entity);
-//
-//        localDomainEventManager.manageDomainEvents(this, List.of(new StaffAddedEvent(staff)));
-//
-//        return staffId.value();
-//    }
-//
-//    @Transactional
-//    public void amendStaffRole(String staffId, Role newRole) {
-//        StaffAggregate staff = findStaffAggregate(staffId);
-//        staff.changeRole(newRole);
-//
-//        staffRepository.save(StaffMapper.toJpa(staff));
-//        localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
-//    }
-//
-//    @Transactional
-//    public void amendStaffDepartment(String staffId, String newDepartmentId) {
-//        StaffAggregate staff = findStaffAggregate(staffId);
-//        staff.changeDepartment(new Identity(newDepartmentId));
-//
-//        staffRepository.save(StaffMapper.toJpa(staff));
-//        localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
-//    }
-//
-//    @Transactional
-//    public void adjustLeaveAllocation(String staffId, int newAllocation) {
-//        StaffAggregate staff = findStaffAggregate(staffId);
-//        staff.updateLeaveAllocation(newAllocation);
-//
-//        staffRepository.save(StaffMapper.toJpa(staff));
-//        localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
-//    }
-//
-//    @Transactional
-//    public void approveLeaveRequest(String leaveRequestId) {
-//        LeaveRequestAggregate leaveRequest = findLeaveRequestAggregate(leaveRequestId);
-//        leaveRequest.approve();
-//
-//        leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
-//        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
-//    }
-//
-//    private StaffAggregate findStaffAggregate(String staffId) {
-//        Optional<StaffEntity> entity = staffRepository.findById(staffId);
-//        if (entity.isEmpty()) throw new IllegalArgumentException("Staff id not found");
-//        return StaffMapper.toDomain(entity.get());
-//    }
-//
-//    private LeaveRequestAggregate findLeaveRequestAggregate(String leaveRequestId) {
-//        Optional<?> entity = leaveRequestRepository.findById(leaveRequestId);
-//        if (entity.isEmpty()) throw new IllegalArgumentException("Leave request id not found");
-//        return LeaveRequestMapper.toDomain((com.example.enterpriselbs.infrastructure.entities.LeaveRequestEntity) entity.get());
-//    }
+
+    @Transactional
+    public String addStaff(AddStaffCommand cmd) {
+        LOG.info("Attempting to add new staff: {}", cmd.getUsername());
+        StaffAggregate staff = StaffAggregate.createWithEvent(
+                UniqueIdFactory.createID(),
+                cmd.getUsername(),
+                new FullName(cmd.getFirstName(), cmd.getSurname()),
+                cmd.getRole(),
+                cmd.getManagerId() != null ? new Identity(cmd.getManagerId()) : null,
+                cmd.getDepartmentId() != null ? new Identity(cmd.getDepartmentId()) : null,
+                cmd.getLeaveAllocation(),
+                new Password(cmd.getPassword())
+        );
+        staffRepository.save(StaffMapper.toJpa(staff));
+        LOG.info("Staff created with ID: {}", staff.id().value());
+        localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
+        return staff.id().value();
+    }
+
+    @Transactional
+    public void amendRole(AmendRoleCommand cmd) {
+        LOG.info("Amending role for staffId={} to {}", cmd.getStaffId(), cmd.getNewRole());
+        staffRepository.findById(cmd.getStaffId())
+                .map(StaffMapper::toDomain)
+                .ifPresentOrElse(staff -> {
+                    staff.changeRole(cmd.getNewRole());
+                    staffRepository.save(StaffMapper.toJpa(staff));
+                    LOG.info("Role updated for staffId={}", staff.id().value());
+                    localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
+                }, () -> {
+                    LOG.error("Staff not found for ID: {}", cmd.getStaffId());
+                    throw new IllegalArgumentException("Staff not found"); });
+    }
+
+    @Transactional
+    public void amendDepartment(AmendDepartmentCommand cmd) {
+        LOG.info("Amending department for staffId={} to {}", cmd.getStaffId(), cmd.getNewDepartmentId());
+        staffRepository.findById(cmd.getStaffId())
+                .map(StaffMapper::toDomain)
+                .ifPresentOrElse(staff -> {
+                    staff.changeDepartment(new Identity(cmd.getNewDepartmentId()));
+                    staffRepository.save(StaffMapper.toJpa(staff));
+                    LOG.info("Department updated for staffId={}", staff.id().value());
+                    localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
+                }, () -> {
+                    LOG.error("Staff not found for ID: {}", cmd.getStaffId());
+                    throw new IllegalArgumentException("Staff not found"); });
+    }
+
+    @Transactional
+    public void amendLeaveAllocation(AmendAnnualLeaveCommand cmd) {
+        staffRepository.findById(cmd.getStaffId())
+                .map(StaffMapper::toDomain)
+                .ifPresentOrElse(staff -> {
+                    staff.updateLeaveAllocation(cmd.getNewLeaveAllocation());
+                    staffRepository.save(StaffMapper.toJpa(staff));
+                    LOG.info("Leave allocation updated for staffId={}", staff.id().value());
+                    localDomainEventManager.manageDomainEvents(this, staff.listOfDomainEvents());
+                }, () -> {
+                    LOG.error("Staff not found for ID: {}", cmd.getStaffId());
+                    throw new IllegalArgumentException("Staff not found"); });
+    }
+
+    @Transactional
+    public void approveLeave(AdminApproveLeaveCommand cmd) {
+        leaveRequestRepository.findById(cmd.getLeaveRequestId())
+                .map(LeaveRequestMapper::toDomain)
+                .ifPresentOrElse(request -> {
+                    request.approve();
+                    leaveRequestRepository.save(LeaveRequestMapper.toJpa(request));
+                    LOG.info("Leave approved for requestId={}", request.id().value());
+                   localDomainEventManager.manageDomainEvents(this, request.listOfDomainEvents());
+                }, () -> {
+                    LOG.error("Leave request not found for ID: {}", cmd.getLeaveRequestId());
+                    throw new IllegalArgumentException("Leave request not found"); });
+    }
+
 }
