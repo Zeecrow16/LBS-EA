@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class ManagerApplicationService {
-    private final StaffRepository staffRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final LocalDomainEventManager localDomainEventManager;
     private final Logger LOG = LoggerFactory.getLogger(getClass());
@@ -59,6 +58,6 @@ public class ManagerApplicationService {
         leaveRequestRepository.save(LeaveRequestMapper.toJpa(leaveRequest));
 
         LOG.info("Leave request rejected for requestId={}", leaveRequest.id().value());
-        localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
+           localDomainEventManager.manageDomainEvents(this, leaveRequest.listOfDomainEvents());
     }
 }

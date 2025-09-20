@@ -15,7 +15,6 @@ public class LeaveRequestAggregate extends BaseEntity {
     private Identity staffId;
     private LeavePeriod period;
     private LeaveStatus status;
-    private String descriptionOfStatus;
     private final List<LocalEvent> domainEvents = new ArrayList<>();
 
     private LeaveRequestAggregate(Identity id, Identity staffId, LeavePeriod period) {
@@ -24,7 +23,6 @@ public class LeaveRequestAggregate extends BaseEntity {
         setPeriod(period);
         this.id = id;
         this.status = LeaveStatus.PENDING;
-        this.descriptionOfStatus = "Pending approval";
     }
 
     public static LeaveRequestAggregate leaveRequestOfWithEvent(Identity id, Identity staffId, LeavePeriod period) {
@@ -36,7 +34,6 @@ public class LeaveRequestAggregate extends BaseEntity {
                                                        LeaveStatus status, String descriptionOfStatus) {
         LeaveRequestAggregate request = new LeaveRequestAggregate(id, staffId, period);
         request.status = status;
-        request.descriptionOfStatus = descriptionOfStatus;
         return request;
     }
 
@@ -54,7 +51,6 @@ public class LeaveRequestAggregate extends BaseEntity {
     public Identity staffId() { return staffId; }
     public LeavePeriod period() { return period; }
     public LeaveStatus status() { return status; }
-    public String descriptionOfStatus() { return descriptionOfStatus; }
 
     public List<LocalEvent> listOfDomainEvents() {
         return Collections.unmodifiableList(domainEvents);
@@ -68,7 +64,6 @@ public class LeaveRequestAggregate extends BaseEntity {
         if (status != LeaveStatus.PENDING)
             throw new IllegalStateException("Only pending leave can be approved");
         status = LeaveStatus.APPROVED;
-        descriptionOfStatus = "Approved";
         addDomainEvent(new LeaveApprovedEvent(this));
     }
 
@@ -76,7 +71,6 @@ public class LeaveRequestAggregate extends BaseEntity {
         if (status != LeaveStatus.PENDING)
             throw new IllegalStateException("Only pending leave can be rejected");
         status = LeaveStatus.REJECTED;
-        descriptionOfStatus = "Rejected";
         addDomainEvent(new LeaveRejectedEvent(this));
     }
 
@@ -84,7 +78,6 @@ public class LeaveRequestAggregate extends BaseEntity {
         if (status == LeaveStatus.CANCELLED)
             throw new IllegalStateException("Already cancelled");
         status = LeaveStatus.CANCELLED;
-        descriptionOfStatus = "Cancelled";
         addDomainEvent(new LeaveCancelledEvent(this));
     }
 }

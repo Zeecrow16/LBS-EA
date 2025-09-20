@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "staff")
 public class StaffEntity {
+    public static final String USERNAME = "username";
+    public static final String ROLE = "role";
 
     @Id
     @Column(name = "staff_id")

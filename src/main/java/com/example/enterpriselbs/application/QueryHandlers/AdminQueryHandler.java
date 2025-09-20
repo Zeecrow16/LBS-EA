@@ -30,12 +30,11 @@ public class AdminQueryHandler {
                         return entity.getStaffId().equals(staffId);
                     }
                     if (managerId != null) {
-                        // staffRepository must expose staff with managerId
                         return staffRepository.findById(entity.getStaffId())
                                 .map(staff -> managerId.equals(staff.getManagerId()))
                                 .orElse(false);
                     }
-                    return true; // company-wide
+                    return true;
                 })
                 .map(LeaveRequestMapper::toDTO)
                 .collect(Collectors.toList());

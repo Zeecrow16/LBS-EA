@@ -14,4 +14,6 @@ public abstract class ValueObject {
     protected void assertArgumentNotNull(Object value, String message) {
         if (value == null) throw new IllegalArgumentException(message);
     }
+
+
 }

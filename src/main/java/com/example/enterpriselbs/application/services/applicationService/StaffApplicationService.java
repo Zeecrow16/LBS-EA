@@ -39,6 +39,25 @@ public class StaffApplicationService {
                     return new IllegalArgumentException("Staff id not found");
                 });
 
+        LeavePeriod leavePeriod = new LeavePeriod(startDate, endDate);
+
+        int requestedDays = leavePeriod.days();
+
+        int remainingLeave = staff.leaveAllocation();
+        int leaveTaken = leaveRequestRepository.findByStaffId(staffId).stream()
+                .map(LeaveRequestMapper::toDomain)
+                .filter(r -> r.status() == LeaveStatus.APPROVED)
+                .mapToInt(r -> r.period().days())
+                .sum();
+
+        int availableLeave = remainingLeave - leaveTaken;
+
+        if (requestedDays > availableLeave) {
+            LOG.warn("Leave request exceeds remaining annual leave for staff {}. Requested: {}, Remaining: {}",
+                    staffId, requestedDays, availableLeave);
+            return "Cannot create leave request: exceeds remaining annual leave";
+        }
+
         LeaveRequestAggregate leaveRequest = LeaveRequestAggregate.leaveRequestOfWithEvent(
                 UniqueIdFactory.createID(),
                 staff.id(),

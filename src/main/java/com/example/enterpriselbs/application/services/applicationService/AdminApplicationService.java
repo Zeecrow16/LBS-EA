@@ -20,7 +20,10 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,11 +35,15 @@ public class AdminApplicationService {
     private final StaffRepository staffRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final LocalDomainEventManager localDomainEventManager;
+    private final PasswordEncoder passwordEncoder;
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     @Transactional
     public String addStaff(AddStaffCommand cmd) {
         LOG.info("Attempting to add new staff: {}", cmd.getUsername());
+
+        String hashedPassword = passwordEncoder.encode(cmd.getPassword());
+
         StaffAggregate staff = StaffAggregate.createWithEvent(
                 UniqueIdFactory.createID(),
                 cmd.getUsername(),
@@ -45,7 +52,7 @@ public class AdminApplicationService {
                 cmd.getManagerId() != null ? new Identity(cmd.getManagerId()) : null,
                 cmd.getDepartmentId() != null ? new Identity(cmd.getDepartmentId()) : null,
                 cmd.getLeaveAllocation(),
-                new Password(cmd.getPassword())
+                new Password(hashedPassword)
         );
         staffRepository.save(StaffMapper.toJpa(staff));
         LOG.info("Staff created with ID: {}", staff.id().value());
@@ -85,6 +92,7 @@ public class AdminApplicationService {
 
     @Transactional
     public void amendLeaveAllocation(AmendAnnualLeaveCommand cmd) {
+
         staffRepository.findById(cmd.getStaffId())
                 .map(StaffMapper::toDomain)
                 .ifPresentOrElse(staff -> {

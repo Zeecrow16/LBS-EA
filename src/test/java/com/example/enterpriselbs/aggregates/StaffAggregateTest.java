@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StaffAggregateTest {
     private final Identity VALID_ID = UniqueIdFactory.createID();
-    private final String VALID_USERNAME = "jdoe";
-    private final FullName VALID_NAME = new FullName("John", "Doe");
+    private final String VALID_USERNAME = "o.butler";
+    private final FullName VALID_NAME = new FullName("Octavia", "Butler");
     private final Role VALID_ROLE = Role.STAFF;
     private final Identity VALID_MANAGER_ID = UniqueIdFactory.createID();
     private final Identity VALID_DEPARTMENT_ID = UniqueIdFactory.createID();
@@ -52,8 +52,8 @@ public class StaffAggregateTest {
     @DisplayName("StaffAggregate full name is correct")
     void testFullName() {
         StaffAggregate staff = createValidStaff();
-        assertEquals("John", staff.fullName().firstName());
-        assertEquals("Doe", staff.fullName().surname());
+        assertEquals("Octavia", staff.fullName().firstName());
+        assertEquals("Butler", staff.fullName().surname());
     }
 
     @Test
